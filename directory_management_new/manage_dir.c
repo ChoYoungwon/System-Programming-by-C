@@ -13,6 +13,7 @@
 #include <pwd.h>
 #include <grp.h>
 #include <time.h>
+#include <regex.h>
 
 #define MAX_CMD_SIZE    (128)
 #define MAX_ARG		(4)
@@ -29,6 +30,9 @@ DECLARE_CMDFUNC(cd);
 DECLARE_CMDFUNC(ls);
 DECLARE_CMDFUNC(ln);
 DECLARE_CMDFUNC(rm);
+DECLARE_CMDFUNC(chmod);
+DECLARE_CMDFUNC(cat);
+DECLARE_CMDFUNC(cp);
 
 /*작업 기본 경로*/
 const char *BASE_PATH = "/tmp/test";
@@ -55,6 +59,9 @@ static cmd_t cmd_list[] = {
 	{"ls", cmd_ls},
 	{"ln", cmd_ln},
 	{"rm", cmd_rm},
+	{"chmod", cmd_chmod},
+	{"cat", cmd_cat},
+	{"cp", cmd_cp},
 };
 
 const int command_num = sizeof(cmd_list) / sizeof(cmd_t);
@@ -158,6 +165,8 @@ void cmd_help(int argc, char **argv)
 	printf("ls : list contents and information of the current directory\n");
 	printf("ln <original file> <new file> : create a hard link using link() to the target file with the specified link name\n");
         printf("rm <path> : remove a file using unlink() at the specified path\n");
+    	printf("cat <filename> : display the contents of the specified file on the standard output\n");
+    	printf("cp <original file> <new file> : copy the contents of the original file to the new file\n");
 }
 
 /* mkdir 명령 실행 함수 */
@@ -287,21 +296,21 @@ const char *get_type_str(char type)
 {
 	switch (type) {
 	case DT_BLK:
-            return "BLK";
+            return "b";			// 블록 장치
         case DT_CHR:
-            return "CHR";
+            return "c";			// 문자 장치
         case DT_DIR:
-            return "DIR";
+            return "d";			// 디렉토리
         case DT_FIFO:
-            return "FIFO";
+            return "p";			// FIFO/파이프
         case DT_LNK:
-            return "LNK";
+            return "l";			// 심볼릭 링크
         case DT_REG:
-            return "REG";
+            return "-";			// 일반 파일
         case DT_SOCK:
-            return "SOCK";
+            return "s";			// 소켓
         default:
-            return "UNKN";
+            return "u";			// 알 수 없는 타입
 	}
 }
 
@@ -325,6 +334,20 @@ void print_permissions(mode_t mode) {
 	printf("%s ", perms);
 }
 
+/*심벌릭 링크 내용 읽고 출력하는  함수*/
+void read_symbolic(char *path)
+{
+	char buf[BUFSIZ];
+	const int num = strlen(BASE_PATH);
+	int n;
+	n = readlink(path, buf, BUFSIZ);
+	if (n == -1) {
+		perror("readlink");
+		exit(1);
+	}
+	buf[n] = '\0';
+	printf("-> %s\n", (buf+num));
+}
 
 /* ls 명령 실행 함수 */
 void cmd_ls(int argc, char **argv)
@@ -336,6 +359,7 @@ void cmd_ls(int argc, char **argv)
 	struct group *group;
 	char *current_dir;
 	char *file_path = (char *)malloc(100 * sizeof(char));
+	char buffer[BUFSIZ];
 	if (file_path == NULL) {
 		perror("malloc");
 		exit(1);
@@ -352,7 +376,8 @@ void cmd_ls(int argc, char **argv)
 			perror(file_path);
 			continue;
 		}
-		printf("%s ", get_type_str(dent->d_type));
+		/* 파일 종류 */
+		printf("%s", get_type_str(dent->d_type));
 		/* 권한  표시*/
 		print_permissions(file_stat.st_mode);
 		/* 링크수 표시*/
@@ -362,17 +387,25 @@ void cmd_ls(int argc, char **argv)
 		printf("%s ", owner->pw_name);
 		/* 그룹명 표시*/
 		group = getgrgid(file_stat.st_gid);
-		printf("%s\n", group->gr_name);
+		printf("%s ", group->gr_name);
 		/* 크기*/
-		// printf("%5ld ", file_stat.st_size);
-		/* 접근한 시간 */
-		printf("%s", ctime(&file_stat.st_atime));
-		/* 생성한 시간*/
-		printf("%s", ctime(&file_stat.st_mtime));
-		/* 수정한 시간*/
-		printf("%s", ctime(&file_stat.st_ctime));
+		printf("%5ld ", file_stat.st_size);
+		/* 마지막으로 파일을 읽거나 실행한 시간 */
+		// printf("%s", ctime(&file_stat.st_atime));
+		/* 파일의 내용이 마지막으로 수정된 시간*/
+		struct tm *timeinfo = localtime(&file_stat.st_mtime);
+		strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
+		printf("%s ", buffer);
+		/* inode의 내용을 수정한 시간(파일의 상태가 마지막으로 변경된 시간)*/
+		// printf("%s", ctime(&file_stat.st_ctime));
 		/* 이름 표시*/
-		printf("%s\n", dent->d_name);
+		if (strcmp("l", get_type_str(dent->d_type)) == 0) {
+			printf("%s ", dent->d_name);
+			read_symbolic(file_path);
+		}
+		else {
+			printf("%s\n", dent->d_name);
+		}
 	}
 	closedir(dp);
 }
@@ -387,8 +420,9 @@ void cmd_ln(int argc, char **argv)
                 perror("malloc");
                 return;
         }
+	/*하드링크인 경우*/
         if (argc == 3) {
-                // 절대 경로로 변환 
+                // 절대 경로로 변환
                 convert_to_absolute(argv[1], old_absolute);
                 convert_to_absolute(argv[2], new_absolute);
 
@@ -401,9 +435,26 @@ void cmd_ln(int argc, char **argv)
                 }
                 else
                         printf("You can't access upper directory\n");
-                }
+        }
+	/* 심볼릭 링크인 경우 */
+	else if(argc == 4 && (strcmp(argv[1], "-s") == 0)) {
+		/* 절대 경로로 변환 */
+		convert_to_absolute(argv[2], old_absolute);
+		convert_to_absolute(argv[3], new_absolute);
+
+		/* 유효성 검사 */
+		if(is_valid_path(old_absolute) && is_valid_path(new_absolute)) {
+			if(symlink(old_absolute, new_absolute) == -1) {
+				perror("symlink");
+			}
+		}
+		else {
+			printf("You can't access upper directory\n");
+		}
+	}
         else {
-                printf("usage : ln <old_name> <new_name>\n");
+                printf("usage(hard link) : ln <old_name> <new_name>\n");
+		printf("usage(symbolic link) : ln -s <target file> <original file>\n");
         }
         free(old_absolute);
         free(new_absolute);
@@ -435,6 +486,179 @@ void cmd_rm(int argc, char **argv)
                 printf("usage : rm <directory>\n");
         }
         free(absolute);
+}
+mode_t chmod_format(const char *mode_str, mode_t current_mode)
+{
+	regex_t regex;			// 정규표현식 사용을 위한 변수 할당
+	int result, i = 0;
+	mode_t permission = 0;
+	char op;
+	mode_t mode = current_mode;
+	//  정규표현식 컴파일
+	if (regcomp(&regex, "^[0-7]+$", REG_EXTENDED) != 0) {
+		return 0;
+	}
+	// 8진수 문자열인 경우 0을 반환(매칭 성공)
+	//  일반 문자열인 경우 1을 반환(매칭 실패)
+	result = regexec(&regex, mode_str, 0, NULL, 0);
+	regfree(&regex);
+
+	if (result == 0) {
+		return (mode_t) strtol(mode_str, NULL, 8);
+	}
+
+	while(mode_str[i] != '\0' && (mode_str[i] == 'u' || mode_str[i] == 'g' || mode_str[i] == 'o')) {
+		switch(mode_str[i]) {
+			case 'u': permission |= S_IRUSR | S_IWUSR | S_IXUSR; break;
+			case 'g': permission |= S_IRGRP | S_IWGRP | S_IXGRP; break;
+			case 'o': permission |= S_IROTH | S_IWOTH | S_IXOTH; break;
+			default: return (mode_t)-1;
+		}
+		i++;
+	}
+	if (permission == 0) {
+		permission = 0777;
+	}
+	op = mode_str[i++];
+	if (op != '+' && op != '-') {
+		return (mode_t)-1;
+	}
+	while (mode_str[i] != '\0') {
+		if(mode_str[i] == 'r' || mode_str[i] == 'w' || mode_str[i] == 'x') {
+			switch(mode_str[i]) {
+				case 'r':
+					if (op == '+') mode |= permission & (S_IRUSR | S_IRGRP | S_IROTH);
+					if (op == '-') mode &= ~(permission & (S_IRUSR | S_IRGRP | S_IROTH));
+					break;
+				case 'w':
+                                        if (op == '+') mode |= permission & (S_IWUSR | S_IWGRP | S_IWOTH);
+                                        if (op == '-') mode &= ~(permission & (S_IWUSR | S_IWGRP | S_IWOTH));
+                                        break;
+   				case 'x':
+                                        if (op == '+') mode |= permission & (S_IXUSR | S_IXGRP | S_IXOTH);
+                                        if (op == '-') mode &= ~(permission & (S_IXUSR | S_IXGRP | S_IXOTH));
+                                        break;
+				default:
+					return -1;
+			}
+			i++;
+		} else {
+			return (mode_t)-1;
+		}
+	}
+	return mode;
+}
+
+/*chmod 명령 함수*/
+void cmd_chmod(int argc, char **argv)
+{
+	struct stat file_stat;
+	char *absolute = malloc(BUFSIZ);
+	if (absolute == NULL) {
+		perror("malloc");
+		return;
+	}
+
+	if (argc == 3) {
+		convert_to_absolute(argv[2], absolute);
+		if (stat(absolute, &file_stat) == -1) {
+			perror("stat");
+			free(absolute);
+			return;
+		}
+
+		mode_t mode = chmod_format(argv[1], file_stat.st_mode);	// 문자열을 8진수 접근권환으로
+		if (mode == (mode_t)-1) {
+			printf("Invalid mode format\n");
+			free(absolute);
+			return;
+		}
+		if(is_valid_path(absolute)) {
+			if(chmod(absolute, mode) == -1) {
+				perror(absolute);
+			}
+		}
+		else {
+			printf("You can't access upper directory\n");
+		}
+	}
+	else {
+		printf("usage : chmod <접근권한: 8진수><파일명>");
+	}
+	free(absolute);
+}
+
+void cmd_cat (int argc, char **argv)
+{
+	FILE *file;
+	char ch;
+	char *absolute = malloc(BUFSIZ);
+	if (argc == 2) {
+		convert_to_absolute(argv[1], absolute);
+		if (is_valid_path(absolute)) {
+			file = fopen(argv[1], "r");
+			if (file == NULL) {
+				perror("file");
+				free(absolute);
+				return;
+			}
+			while((ch = fgetc(file)) != EOF) {
+				putchar(ch);
+			}
+			fclose(file);
+		}
+		else {
+			printf("You can't access upper directory\n");
+		}
+	}
+	else {
+		printf("usage: cat <파일명>\n");
+	}
+	free(absolute);
+}
+void copy_file(const char *source, const char *target)
+{
+	FILE *src = fopen(source, "rb");
+	if (src == NULL) {
+		perror("Error opening source file");
+		fclose(src);
+		return;
+	}
+	FILE *tar = fopen(target, "wb");
+	if (target == NULL) {
+		perror("Error opening source file");
+		fclose(src);
+		fclose(tar);
+		return;
+	}
+	char buffer[BUFSIZ];
+	size_t byte;
+
+	while((byte = fread(buffer, 1, sizeof(buffer), src)) > 0) {
+		fwrite(buffer, 1, byte, tar);
+	}
+	fclose(src);
+	fclose(tar);
+}
+
+void cmd_cp (int argc, char **argv)
+{
+	char *absolute_origin = malloc(BUFSIZ);
+	char *absolute_new = malloc(BUFSIZ);
+
+	if (argc == 3) {
+		convert_to_absolute(argv[1], absolute_origin);
+		convert_to_absolute(argv[2], absolute_new);
+		if (is_valid_path(absolute_origin) && is_valid_path(absolute_new)) {
+			copy_file(absolute_origin, absolute_new);
+		}
+		else {
+			printf("You can't access upper directory\n");
+		}
+	}
+	else {
+		printf("usage: cp <original file> <new file>\n");
+	}
 }
 
 /* 상대 경로를 절대 경로로 변환하는 함수 */
