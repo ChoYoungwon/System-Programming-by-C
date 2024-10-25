@@ -390,19 +390,24 @@ void cmd_ls(int argc, char **argv)
 		printf("%s ", group->gr_name);
 		/* 크기*/
 		printf("%5ld ", file_stat.st_size);
-		/* 마지막으로 파일을 읽거나 실행한 시간 */
+
+		// 마지막으로 파일을 읽거나 실행한 시간
 		// printf("%s", ctime(&file_stat.st_atime));
-		/* 파일의 내용이 마지막으로 수정된 시간*/
+
+		// 파일의 내용이 마지막으로 수정된 시간
 		struct tm *timeinfo = localtime(&file_stat.st_mtime);
 		strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
 		printf("%s ", buffer);
-		/* inode의 내용을 수정한 시간(파일의 상태가 마지막으로 변경된 시간)*/
+
+		// inode의 내용을 수정한 시간(파일의 상태가 마지막으로 변경된 시간)
 		// printf("%s", ctime(&file_stat.st_ctime));
-		/* 이름 표시*/
+
+		// 심볼릭 링크인 경우
 		if (strcmp("l", get_type_str(dent->d_type)) == 0) {
 			printf("%s ", dent->d_name);
-			read_symbolic(file_path);
+			read_symbolic(file_path);		//심볼릭 링크 출력
 		}
+		// 일반적인 경우
 		else {
 			printf("%s\n", dent->d_name);
 		}
@@ -487,6 +492,11 @@ void cmd_rm(int argc, char **argv)
         }
         free(absolute);
 }
+
+/*
+	8진수 형식: 그대로 반환한다.
+	문자열 형식 : 기존 권한에서 원하는 권한을 추가하거나 삭제한다.
+*/
 mode_t chmod_format(const char *mode_str, mode_t current_mode)
 {
 	regex_t regex;			// 정규표현식 사용을 위한 변수 할당
@@ -498,15 +508,16 @@ mode_t chmod_format(const char *mode_str, mode_t current_mode)
 	if (regcomp(&regex, "^[0-7]+$", REG_EXTENDED) != 0) {
 		return 0;
 	}
-	// 8진수 문자열인 경우 0을 반환(매칭 성공)
-	//  일반 문자열인 경우 1을 반환(매칭 실패)
+
 	result = regexec(&regex, mode_str, 0, NULL, 0);
 	regfree(&regex);
 
+	// 8진수 형태인 경우(매칭 성공)
 	if (result == 0) {
 		return (mode_t) strtol(mode_str, NULL, 8);
 	}
 
+	// 일반 문자열인 경우
 	while(mode_str[i] != '\0' && (mode_str[i] == 'u' || mode_str[i] == 'g' || mode_str[i] == 'o')) {
 		switch(mode_str[i]) {
 			case 'u': permission |= S_IRUSR | S_IWUSR | S_IXUSR; break;
@@ -588,6 +599,7 @@ void cmd_chmod(int argc, char **argv)
 	free(absolute);
 }
 
+// cat 명령을 실행하는 함수
 void cmd_cat (int argc, char **argv)
 {
 	FILE *file;
@@ -616,6 +628,8 @@ void cmd_cat (int argc, char **argv)
 	}
 	free(absolute);
 }
+
+// 원본 파일을 타겟 파일에 복사시키는 함수
 void copy_file(const char *source, const char *target)
 {
 	FILE *src = fopen(source, "rb");
@@ -641,6 +655,7 @@ void copy_file(const char *source, const char *target)
 	fclose(tar);
 }
 
+// cp 명령을 처리하는 함수 
 void cmd_cp (int argc, char **argv)
 {
 	char *absolute_origin = malloc(BUFSIZ);
