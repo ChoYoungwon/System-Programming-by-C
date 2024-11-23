@@ -3,51 +3,8 @@
  학번 : 2020136122
  이름 : 조영원
 */
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <dirent.h>
-#include <pwd.h>
-#include <grp.h>
-#include <time.h>
-#include <regex.h>
-#include <signal.h>
-#include <ctype.h>
+# include "custom_header.h"
 
-#define MAX_CMD_SIZE    (128)
-#define MAX_ARG		(4)
-#define MAX_PATH 	(256)
-
-/* 매크로 함수 선언을 자동화 */
-#define DECLARE_CMDFUNC(str)	void cmd_##str(int argc, char **argv);
-
-/* 함수 선언 */
-DECLARE_CMDFUNC(help);
-DECLARE_CMDFUNC(mkdir);
-DECLARE_CMDFUNC(rmdir);
-DECLARE_CMDFUNC(rename);
-DECLARE_CMDFUNC(cd);
-DECLARE_CMDFUNC(ls);
-DECLARE_CMDFUNC(ln);
-DECLARE_CMDFUNC(rm);
-DECLARE_CMDFUNC(chmod);
-DECLARE_CMDFUNC(cat);
-DECLARE_CMDFUNC(cp);
-DECLARE_CMDFUNC(ps);
-DECLARE_CMDFUNC(kill);
-
-/*작업 기본 경로*/
-const char *BASE_PATH = "/tmp/test";
-
-
-void convert_to_absolute(const char *relative_path, char *absolute_path);
-int is_valid_path(const char *path);
-
-void cmd_program_run(int argc, char **argv);
 typedef void (*cmd_func_t)(int argc, char **argv);
 
 /*명령어 구조체 정의*/
@@ -153,7 +110,7 @@ int main(int argc, char **argv)
 		i = search_command(tok_str[0]);
 		if (i < 0) {
 			if(cmd_argc == 1) {
-				cmd_program_run(cmd_argc, tok_str);
+				cmd_run(cmd_argc, tok_str);
 			} else {
 				printf("%s : command not found\n", tok_str[0]);
 			}
@@ -173,8 +130,9 @@ int main(int argc, char **argv)
     return 0;
 }
 
+#if 0
 // 프로그램 실행 동작을 구현하는 함수 
-void cmd_program_run(int argc, char **argv)
+void cmd_run(int argc, char **argv)
 {
 	pid_t pid;
 	char *absolute = malloc(BUFSIZ);
@@ -211,6 +169,7 @@ void cmd_program_run(int argc, char **argv)
 		}
 	}
 }
+
 
 /* help 명렁 실행 함수*/
 void cmd_help(int argc, char **argv)
@@ -252,6 +211,7 @@ void cmd_mkdir(int argc, char **argv)
 	free(absolute);
 }
 
+
 /* rmdir 명령 실행 함수 */
 void cmd_rmdir(int argc, char **argv)
 {
@@ -279,6 +239,7 @@ void cmd_rmdir(int argc, char **argv)
 	}
 	free(absolute);
 }
+
 
 /* rename 명령 실행 함수 */
 void cmd_rename(int argc, char **argv)
@@ -887,3 +848,4 @@ int is_valid_path(const char *path)
 {
 	return (strncmp(path, BASE_PATH, strlen(BASE_PATH)) == 0);
 }
+#endif
