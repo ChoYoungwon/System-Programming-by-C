@@ -1,0 +1,20 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+
+#define ENABLE_CMD_CAT
+#define ENABLE_CMD_HELP
+#define ENABLE_CMD_MKDIR
+#define ENABLE_CMD_RMDIR
+#define ENABLE_CMD_CD
+#define ENABLE_CMD_KILL
+#define ENABLE_CMD_PS
+#define ENABLE_CMD_RUN
+#define ENABLE_CMD_CHMOD
+#define ENABLE_CMD_LN
+#define ENABLE_CMD_RENAME
+#define ENABLE_CMD_CP
+#define ENABLE_CMD_LS
+#define ENABLE_CMD_RM
+
+#endif

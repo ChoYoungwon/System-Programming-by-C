@@ -16,6 +16,9 @@
 #include <signal.h>
 #include <ctype.h>
 #include <errno.h>
+#include <getopt.h>
+#include <sys/sysinfo.h>
+
 
 #define MAX_CMD_SIZE    (128)
 #define MAX_ARG		(4)
@@ -42,6 +45,10 @@ DECLARE_CMDFUNC(run);
 
 // 작업 기본 경로
 extern const char *BASE_PATH;
+
+// getopt 관련 전역 변수 선언
+extern char *optarg;
+extern int optind, opterr, optopt;
 
 // 상대경로를 절대경로로 변환 함수 선언
 void convert_to_absolute(const char *relative_path, char *absolute_path);

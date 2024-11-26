@@ -1,3 +1,5 @@
+#include "config.h"
+#ifdef ENABLE_CMD_RM
 #include "custom_header.h"
 
 // 파일 삭제 명령(rm) 
@@ -16,7 +18,7 @@ void cmd_rm(int argc, char **argv)
         if(is_valid_path(absolute))
         {
             if(unlink(absolute) == -1) {
-                    perror(absolute);
+                    perror("rm");
             }
         }
         else
@@ -28,3 +30,4 @@ void cmd_rm(int argc, char **argv)
     free(absolute);
 }
 
+#endif

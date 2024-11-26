@@ -1,10 +1,12 @@
+#include "config.h"
+#ifdef ENABLE_CMD_CHMOD
 #include "custom_header.h"
 
 /*
 	8진수 형식: 그대로 반환한다.
 	문자열 형식 : 기존 권한에서 원하는 권한을 추가하거나 삭제한다.
 */
-mode_t chmod_format(const char *mode_str, mode_t current_mode)
+static mode_t chmod_format(const char *mode_str, mode_t current_mode)
 {
 	regex_t regex;			// 정규표현식 사용을 위한 변수 할당
 	int result, i = 0;
@@ -105,3 +107,5 @@ void cmd_chmod(int argc, char **argv)
 	}
 	free(absolute);
 }
+
+#endif

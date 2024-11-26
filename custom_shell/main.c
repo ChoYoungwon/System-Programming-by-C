@@ -1,3 +1,4 @@
+#include "config.h"
 #include "custom_header.h"
 
 typedef void (*cmd_func_t)(int argc, char **argv);
@@ -10,26 +11,52 @@ typedef struct  cmd_t {
 
 // 명령어 목록
 static cmd_t cmd_list[] = {
+	#ifdef ENABLE_CMD_HELP
 	{"help", cmd_help},
+	#endif
+	#ifdef ENABLE_CMD_MKDIR
 	{"mkdir", cmd_mkdir},
+	#endif
+	#ifdef ENABLE_CMD_RMDIR
 	{"rmdir", cmd_rmdir},
+	#endif
+	#ifdef ENABLE_CMD_RENAME
 	{"rename", cmd_rename},
+	#endif
+	#ifdef ENABLE_CMD_CD
 	{"cd", cmd_cd},
+	#endif
+	#ifdef ENABLE_CMD_LS
 	{"ls", cmd_ls},
+	#endif
+	#ifdef ENABLE_CMD_LN
 	{"ln", cmd_ln},
+	#endif
+	#ifdef ENABLE_CMD_RM
 	{"rm", cmd_rm},
+	#endif
+	#ifdef ENABLE_CMD_CHMOD
 	{"chmod", cmd_chmod},
+	#endif
+	#ifdef ENABLE_CMD_CAT
 	{"cat", cmd_cat},
+	#endif
+	#ifdef ENABLE_CMD_CP
 	{"cp", cmd_cp},
+	#endif
+	#ifdef ENABLE_CMD_PS
 	{"ps", cmd_ps},
+	#endif
+	#ifdef ENABLE_CMD_KILL
 	{"kill", cmd_kill},
+	#endif
 };
 
 // 명령어 개수
-const int command_num = sizeof(cmd_list) / sizeof(cmd_t);
+static const int command_num = sizeof(cmd_list) / sizeof(cmd_t);
 
 // 명령어에 의해 실행되는 함수를 찾는 함수
-int search_command(char *cmd)
+static int search_command(char *cmd)
 {
 	int i;
 	for (i = 0; i< command_num; i++) {
@@ -79,6 +106,8 @@ int main(int argc, char **argv)
 		optind = 1;
 		opterr = 0;
 		optopt = 0;
+		optarg = NULL;
+
 		current_dir = getcwd(NULL, BUFSIZ);	// 현재 디렉토리 주소
 
 		//현재 주소가 홈 디렉토리인 경우
@@ -117,7 +146,11 @@ int main(int argc, char **argv)
 			i = search_command(tok_str[0]);
 			if (i < 0) {
 				if(cmd_argc == 1) {
+					#ifdef ENABLE_CMD_RUN
 					cmd_run(cmd_argc, tok_str);					// 프로그램 실행
+					#else
+						printf("%s : command not found\n", tok_str[0]);
+					#endif
 				} else {
 					printf("%s : command not found\n", tok_str[0]);
 				}
@@ -130,6 +163,11 @@ int main(int argc, char **argv)
 				}
 			}
 	    }
+
+		if (current_dir != NULL) {
+			free(current_dir);
+			current_dir = NULL;
+		}
     } while (1);
 
     free(command);

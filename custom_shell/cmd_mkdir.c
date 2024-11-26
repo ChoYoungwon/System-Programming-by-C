@@ -1,4 +1,6 @@
-# include "custom_header.h"
+#include "config.h"
+#ifdef ENABLE_CMD_MKDIR
+#include "custom_header.h"
 
 // mkdir 명령 실행 함수
 void cmd_mkdir(int argc, char **argv)
@@ -7,9 +9,8 @@ void cmd_mkdir(int argc, char **argv)
 	mode_t mode = 0755;
 	char *endptr;
 
-	optind = 1;
-    opterr = 0;
-    optopt = 0;
+	// getopt 상태 초기화
+	optind = 0;
 
 	//getopt로 옵션 확인
 	while ((n = getopt(argc, argv, "m:")) != -1) {
@@ -17,14 +18,11 @@ void cmd_mkdir(int argc, char **argv)
 		case 'm':
 			errno = 0;
 			mode = strtol(optarg, &endptr, 8);
-			if (errno == ERANGE || *endptr != '\0' || endptr == optarg) {
+			if (errno != 0 || *endptr != '\0' || endptr == optarg) {
 				perror("Invalid mode");
 				return;
 			}
 			break;
-		case '?':
-			printf("usage: mkdir [-m mode] <directory>\n");
-			return;
 		}
 	}
 
@@ -47,7 +45,7 @@ void cmd_mkdir(int argc, char **argv)
 		mode_t old_umask = umask(0);
 
 		if(mkdir(absolute, mode) == -1) {
-	        perror(absolute);
+	        perror("mkdir");
         } else {
 			if (chmod(absolute, mode) == -1) {
 				perror("chmod");
@@ -60,10 +58,8 @@ void cmd_mkdir(int argc, char **argv)
         printf("You can't access upper directory\n");
     }
 
-    optind = 1;
-    opterr = 0;
-    optopt = 0;
-
+	// printf("Debug: optind = %d, optarg = %s\n", optind, optarg);
 	free(absolute);
 }
 
+#endif

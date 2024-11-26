@@ -1,4 +1,7 @@
+#include "config.h"
+#ifdef ENABLE_CMD_RMDIR
 #include "custom_header.h"
+
 
 // rmdir 명령 실행 함수
 void cmd_rmdir(int argc, char **argv)
@@ -16,7 +19,7 @@ void cmd_rmdir(int argc, char **argv)
         if(is_valid_path(absolute))
         {
             if(rmdir(absolute) == -1) {
-                    perror(absolute);
+                    perror("rmdir");
             }
         }
         else
@@ -28,3 +31,4 @@ void cmd_rmdir(int argc, char **argv)
     free(absolute);
 }
 
+#endif

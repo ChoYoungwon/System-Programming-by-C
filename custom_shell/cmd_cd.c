@@ -1,3 +1,5 @@
+#include "config.h"
+#ifdef ENABLE_CMD_CD
 #include "custom_header.h"
 
 // cd 명령 실행 함수
@@ -41,3 +43,5 @@ void cmd_cd(int argc, char **argv)
 		free(absolute);
 	}
 }
+
+#endif

@@ -1,3 +1,5 @@
+#include "config.h"
+#ifdef ENABLE_CMD_RUN
 #include "custom_header.h"
 
 void cmd_run(int argc, char **argv)
@@ -38,3 +40,5 @@ void cmd_run(int argc, char **argv)
 		}
 	}
 }
+
+#endif

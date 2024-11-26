@@ -1,7 +1,9 @@
+#include "config.h"
+#ifdef ENABLE_CMD_CP
 #include "custom_header.h"
 
 // 원본 파일을 타겟 파일에 복사시키는 함수
-void copy_file(const char *source, const char *target)
+static void copy_file(const char *source, const char *target)
 {
 	FILE *src = fopen(source, "rb");
 	if (src == NULL) {
@@ -44,3 +46,5 @@ void cmd_cp (int argc, char **argv)
 		printf("usage: cp <original file> <new file>\n");
 	}
 }
+
+#endif

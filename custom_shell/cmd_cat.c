@@ -1,3 +1,5 @@
+#include "config.h"
+#ifdef ENABLE_CMD_CAT
 #include "custom_header.h"
 
 // cat 명령을 실행하는 함수
@@ -30,3 +32,4 @@ void cmd_cat (int argc, char **argv)
 	free(absolute);
 }
 
+#endif

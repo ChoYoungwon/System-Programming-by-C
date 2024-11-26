@@ -1,3 +1,5 @@
+#include "config.h"
+#ifdef ENABLE_CMD_RENAME
 #include "custom_header.h"
 
 // rename 명령 실행 함수
@@ -31,3 +33,5 @@ void cmd_rename(int argc, char **argv)
     free(old_absolute);
     free(new_absolute);
 }
+
+#endif

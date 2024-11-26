@@ -1,3 +1,5 @@
+#include "config.h"
+#ifdef ENABLE_CMD_KILL
 #include "custom_header.h"
 
 // kill 명령 구현
@@ -15,3 +17,4 @@ void cmd_kill(int argc, char **argv)
     }
 }
 
+#endif
