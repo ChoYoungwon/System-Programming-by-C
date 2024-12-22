@@ -47,7 +47,6 @@ void convert_to_absolute(const char *relative_path, char *absolute_path)
 }
 
 // 유효성 검사 함수 (경로가 상위 디렉토리에 접근하는지 확인)
-int is_valid_path(const char *path)
-{
+int is_valid_path(const char *path) {
 	return (strncmp(path, BASE_PATH, strlen(BASE_PATH)) == 0);
 }

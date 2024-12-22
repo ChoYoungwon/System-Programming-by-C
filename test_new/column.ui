@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <object class="GtkApplicationWindow" id="win">
+    <property name="title">custom_file_explorer</property>
+    <property name="default-width">800</property>
+    <property name="default-height">600</property>
+	<child>
+	 <object class="GtkBox">
+	  <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
+	  <property name="spacing">10</property>
+	  <property name="margin-top">10</property>
+	  <property name="margin-bottom">10</property>
+	  <property name="margin-start">10</property>
+	  <property name="margin-end">10</property>
+
+      <!-- 검색창과 버튼들을 포함하는 수평 박스 -->
+      <child>
+       <object class="GtkBox">
+        <property name="orientation">GTK_ORIENTATION_HORIZONTAL</property>
+        <property name="spacing">10</property>
+        
+        <child>
+         <object class="GtkLabel" id="label">
+          <property name="label">디렉토리 경로:</property>
+         </object>
+        </child>
+        
+        <child>
+         <object class="GtkEntry" id="path_entry">
+          <property name="hexpand">TRUE</property>
+          <property name="buffer">  
+           <object class="GtkEntryBuffer" id="buffer"></object>
+          </property>
+         </object>
+        </child>
+        
+        <child>
+         <object class="GtkButton" id="load_button">
+          <property name="label">이동</property>
+         </object>
+        </child>
+        
+        <child>
+         <object class="GtkButton" id="upper_button">
+          <property name="label">이전</property>
+         </object>
+        </child>
+      </object>
+     </child>
+
+	 <child>
+      <object class="GtkScrolledWindow">
+        <property name="hexpand">TRUE</property>
+        <property name="vexpand">TRUE</property>
+        <child>
+          <object class="GtkColumnView" id="columnview">
+            <property name="model">
+              <object class="GtkSingleSelection">
+                <property name="model">
+                  <object class="GtkSortListModel">
+                    <property name="model">
+                      <object class="GtkDirectoryList" id="directorylist">
+                        <property name="attributes">standard::name,standard::icon,standard::size,time::modified</property>
+                      </object>
+                    </property>
+                    <binding name="sorter">
+                      <lookup name="sorter">columnview</lookup>
+                    </binding>
+                  </object>
+                </property>
+              </object>
+            </property>
+            <child>
+              <object class="GtkColumnViewColumn">
+                <property name="title">이름</property>
+                <property name="expand">TRUE</property>
+                <property name="factory">
+                  <object class="GtkBuilderListItemFactory">
+                    <property name="bytes"><![CDATA[
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="GtkListItem">
+    <property name="child">
+      <object class="GtkBox">
+        <property name="orientation">GTK_ORIENTATION_HORIZONTAL</property>
+        <property name="spacing">20</property>
+        <child>
+          <object class="GtkImage">
+            <binding name="gicon">
+              <closure type="GIcon" function="get_icon_factory">
+                <lookup name="item">GtkListItem</lookup>
+              </closure>
+            </binding>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel">
+            <property name="hexpand">TRUE</property>
+            <property name="xalign">0</property>
+            <binding name="label">
+              <closure type="gchararray" function="get_file_name_factory">
+                <lookup name="item">GtkListItem</lookup>
+              </closure>
+            </binding>
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+</interface>
+                    ]]></property>
+                  </object>
+                </property>
+                <property name="sorter">
+                  <object class="GtkStringSorter">
+                    <property name="expression">
+                      <closure type="gchararray" function="get_file_name">
+                      </closure>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkColumnViewColumn">
+                <property name="title">크기</property>
+                <property name="factory">
+                  <object class="GtkBuilderListItemFactory">
+                    <property name="bytes"><![CDATA[
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="GtkListItem">
+    <property name="child">
+      <object class="GtkLabel">
+        <property name="hexpand">TRUE</property>
+        <property name="xalign">0</property>
+        <binding name="label">
+          <closure type="gint64" function="get_file_size_factory">
+            <lookup name="item">GtkListItem</lookup>
+          </closure>
+        </binding>
+      </object>
+    </property>
+  </template>
+</interface>
+                    ]]></property>
+                  </object>
+                </property>
+                <property name="sorter">
+                  <object class="GtkNumericSorter">
+                    <property name="expression">
+                      <closure type="gint64" function="get_file_size">
+                      </closure>
+                    </property>
+                    <property name="sort-order">GTK_SORT_ASCENDING</property>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkColumnViewColumn">
+                <property name="title">수정 시간</property>
+                <property name="factory">
+                  <object class="GtkBuilderListItemFactory">
+                    <property name="bytes"><![CDATA[
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="GtkListItem">
+    <property name="child">
+      <object class="GtkLabel">
+        <property name="hexpand">TRUE</property>
+        <property name="xalign">0</property>
+        <binding name="label">
+          <closure type="gchararray" function="get_file_time_modified_factory">
+            <lookup name="item">GtkListItem</lookup>
+          </closure>
+        </binding>
+      </object>
+    </property>
+  </template>
+</interface>
+                    ]]></property>
+                  </object>
+                </property>
+                <property name="sorter">
+                  <object class="GtkNumericSorter">
+                    <property name="expression">
+                      <closure type="gint64" function="get_file_unixtime_modified">
+                      </closure>
+                    </property>
+                    <property name="sort-order">GTK_SORT_ASCENDING</property>
+                  </object>
+                </property>
+              </object>
+            </child>
+
+          </object>
+        </child>
+      </object>
+    </child>
+
+	<child>
+      <object class="GtkBox">
+        <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
+        <property name="spacing">5</property>
+        <child>
+          <object class="GtkLabel">
+            <property name="label">즐겨찾기</property>
+            <property name="halign">start</property>
+            <property name="margin-bottom">5</property>
+            <style>
+              <class name="title-4"/>
+            </style>
+          </object>
+        </child>
+        <child>
+          <object class="GtkScrolledWindow" id="favorites_scroll">
+            <property name="hexpand">TRUE</property>
+            <property name="vexpand">TRUE</property>
+            <property name="min-content-height">30</property>
+            <property name="max-content-height">40</property>
+            <child>
+              <object class="GtkListBox" id="favorites_list">
+                <property name="selection-mode">GTK_SELECTION_SINGLE</property>
+                <style>
+                  <class name="boxed-list"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+   </object>
+  </child>
+ </object>
+</interface>
